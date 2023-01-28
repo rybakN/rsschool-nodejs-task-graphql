@@ -2,6 +2,7 @@ import { FastifyPluginAsyncJsonSchemaToTs } from "@fastify/type-provider-json-sc
 import { idParamSchema } from "../../utils/reusedSchemas";
 import { changeMemberTypeBodySchema } from "./schema";
 import type { MemberTypeEntity } from "../../utils/DB/entities/DBMemberTypes";
+import { FastifyInstance } from "fastify";
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
@@ -9,7 +10,7 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify.get("/", async function (request, reply): Promise<
     MemberTypeEntity[]
   > {
-    return fastify.db.memberTypes.findMany();
+    return getMemberTypes(fastify);
   });
 
   fastify.get(
@@ -21,14 +22,14 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
     },
     async function (request, reply): Promise<MemberTypeEntity> {
       const { id } = request.params;
-      const member = await fastify.db.memberTypes.findOne({
-        key: "id",
-        equals: id,
-      });
+      const memberTypes: MemberTypeEntity | null = await getMemberType(
+        fastify,
+        id
+      );
 
-      if (!member) throw fastify.httpErrors.notFound();
+      if (!memberTypes) throw fastify.httpErrors.notFound();
 
-      return member;
+      return memberTypes;
     }
   );
 
@@ -41,14 +42,28 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<MemberTypeEntity> {
-      const member = await fastify.db.memberTypes.change(
-        request.params.id,
-        request.body
+      const { id } = request.params;
+      const memberType: MemberTypeEntity | null = await getMemberType(
+        fastify,
+        id
       );
-      if (!member) throw fastify.httpErrors.badRequest();
-      return member;
+      if (!memberType) throw fastify.httpErrors.badRequest();
+      return fastify.db.memberTypes.change(id, request.body);
     }
   );
 };
 
 export default plugin;
+
+export const getMemberTypes = async (
+  fastify: FastifyInstance
+): Promise<MemberTypeEntity[]> => {
+  return fastify.db.memberTypes.findMany();
+};
+
+export const getMemberType = async (
+  fastify: FastifyInstance,
+  id: string
+): Promise<MemberTypeEntity | null> => {
+  return fastify.db.memberTypes.findOne({ equals: id, key: "id" });
+};

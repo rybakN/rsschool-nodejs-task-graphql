@@ -2,12 +2,15 @@ import { FastifyPluginAsyncJsonSchemaToTs } from "@fastify/type-provider-json-sc
 import { idParamSchema } from "../../utils/reusedSchemas";
 import { createProfileBodySchema, changeProfileBodySchema } from "./schema";
 import type { ProfileEntity } from "../../utils/DB/entities/DBProfiles";
+import { FastifyInstance } from "fastify";
+import { getMemberType } from "../member-types";
+import { MemberTypeEntity } from "../../utils/DB/entities/DBMemberTypes";
 
 const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
   fastify
 ): Promise<void> => {
   fastify.get("/", async function (request, reply): Promise<ProfileEntity[]> {
-    return fastify.db.profiles.findMany();
+    return getProfiles(fastify);
   });
 
   fastify.get(
@@ -17,11 +20,13 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<ProfileEntity | null> {
-      return fastify.db.profiles.findOne({
-        key: "id",
-        equals: request.params.id,
-      });
+    async function (request, reply): Promise<ProfileEntity> {
+      const { id } = request.params;
+      const profile: ProfileEntity | null = await getProfile(fastify, id);
+
+      if (!profile) throw fastify.httpErrors.notFound();
+
+      return profile;
     }
   );
 
@@ -33,7 +38,17 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<ProfileEntity> {
-      return fastify.db.profiles.create(request.body);
+      const { body } = request;
+      const memberType: MemberTypeEntity | null = await getMemberType(
+        fastify,
+        body.memberTypeId
+      );
+      if (!memberType) throw fastify.httpErrors.badRequest();
+
+      const duplicate: boolean = await isDuplicate(fastify, body.userId);
+      if (duplicate) throw fastify.httpErrors.badRequest();
+
+      return fastify.db.profiles.create(body);
     }
   );
 
@@ -45,7 +60,12 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<ProfileEntity> {
-      return fastify.db.profiles.delete(request.id);
+      const { id } = request.params;
+      const profile: ProfileEntity | null = await getProfile(fastify, id);
+
+      if (!profile) throw fastify.httpErrors.badRequest();
+
+      return fastify.db.profiles.delete(id);
     }
   );
 
@@ -58,9 +78,37 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
       },
     },
     async function (request, reply): Promise<ProfileEntity> {
-      return fastify.db.profiles.change(request.id, request.body);
+      const { id } = request.params;
+      const profile: ProfileEntity | null = await getProfile(fastify, id);
+
+      if (!profile) throw fastify.httpErrors.badRequest();
+      return fastify.db.profiles.change(id, request.body);
     }
   );
 };
 
 export default plugin;
+
+export const getProfiles = async (
+  fastify: FastifyInstance
+): Promise<ProfileEntity[]> => {
+  return fastify.db.profiles.findMany();
+};
+
+export const getProfile = async (
+  fastify: FastifyInstance,
+  id: string
+): Promise<ProfileEntity | null> => {
+  return fastify.db.profiles.findOne({ equals: id, key: "id" });
+};
+
+const isDuplicate = async (
+  fastify: FastifyInstance,
+  id: string
+): Promise<boolean> => {
+  const allProfiles: ProfileEntity | null = await fastify.db.profiles.findOne({
+    equals: id,
+    key: "userId",
+  });
+  return !!allProfiles;
+};
