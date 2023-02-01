@@ -252,7 +252,7 @@ If the properties of the entity are not specified, then return the id of it.
 4. Limit the complexity of the graphql queries by their depth with [graphql-depth-limit](https://www.npmjs.com/package/graphql-depth-limit) package.   
    4.1. Provide a link to the line of code where it was used.
    ```
-   Implemented in /src/routes/graphql/index.ts on lines 53-61
+   Implemented in /src/routes/graphql/index.ts on lines 31-33
    ```
    4.2. Specify a POST body of gql query that ends with an error due to the operation of the rule. Request result should be with `errors` field (and with or without `data:null`) describing the error.
    ```
