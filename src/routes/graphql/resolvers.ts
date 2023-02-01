@@ -1,4 +1,4 @@
-import { getUser, getUsers } from "../users";
+import { addSubscription, delSubscription, getUser, getUsers } from "../users";
 import { FastifyInstance } from "fastify";
 import { UserEntity } from "../../utils/DB/entities/DBUsers";
 import { createPost, getPost, getPosts } from "../posts";
@@ -220,5 +220,49 @@ export const resolvers = {
       key: "id",
       equals: profile.memberTypeId,
     });
+  },
+
+  subscribedTo: async (
+    parent: any,
+    args: {
+      data: {
+        who: string;
+        to: string;
+      };
+    },
+    context: FastifyInstance
+  ) => {
+    const { who } = args.data;
+    const { data } = args;
+    const user: UserEntity | null = await getUser(context, data.to);
+    const userTo: UserEntity | null = await getUser(context, who);
+
+    if (!user || !userTo) throw context.httpErrors.notFound();
+
+    return await addSubscription(context, userTo, user.id);
+  },
+
+  unsubscribedFrom: async (
+    parent: any,
+    args: {
+      data: {
+        who: string;
+        from: string;
+      };
+    },
+    context: FastifyInstance
+  ) => {
+    const { who } = args.data;
+    const { data } = args;
+
+    const user: UserEntity | null = await getUser(context, who);
+    const userTo: UserEntity | null = await getUser(context, data.from);
+
+    if (!user || !userTo) throw context.httpErrors.notFound();
+
+    if (!user.subscribedToUserIds.includes(userTo.id))
+      throw context.httpErrors.badRequest();
+
+    return delSubscription(context, user, userTo.id);
   },
 };

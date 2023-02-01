@@ -53,6 +53,22 @@ const updateUserInputType = new GraphQLInputObjectType({
   },
 });
 
+const subscribeUserInputType = new GraphQLInputObjectType({
+  name: "subscribeUserData",
+  fields: {
+    who: { type: new GraphQLNonNull(GraphQLID) },
+    to: { type: new GraphQLNonNull(GraphQLID) },
+  },
+});
+
+const unsubscribeUserInputType = new GraphQLInputObjectType({
+  name: "unsubscribeUserData",
+  fields: {
+    who: { type: new GraphQLNonNull(GraphQLID) },
+    from: { type: new GraphQLNonNull(GraphQLID) },
+  },
+});
+
 export const usersQuery = {
   type: new GraphQLNonNull(new GraphQLList(UserType)),
   resolve: resolvers.users,
@@ -86,4 +102,26 @@ export const updateUser = {
     },
   },
   resolve: resolvers.updateUser,
+};
+
+export const subscribeUser = {
+  type: UserType,
+  args: {
+    data: {
+      name: "subscribeUser",
+      type: subscribeUserInputType,
+    },
+  },
+  resolve: resolvers.subscribedTo,
+};
+
+export const unsubscribeUser = {
+  type: UserType,
+  args: {
+    data: {
+      name: "unsubscribeUser",
+      type: unsubscribeUserInputType,
+    },
+  },
+  resolve: resolvers.unsubscribedFrom,
 };
