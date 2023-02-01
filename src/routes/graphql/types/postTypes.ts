@@ -1,5 +1,6 @@
 import {
   GraphQLID,
+  GraphQLInputObjectType,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -14,6 +15,24 @@ export const PostType = new GraphQLObjectType({
     title: { type: GraphQLString },
     content: { type: GraphQLString },
     userId: { type: GraphQLID },
+  },
+});
+
+const createPostInputType = new GraphQLInputObjectType({
+  name: "createPost",
+  fields: {
+    title: { type: new GraphQLNonNull(GraphQLString) },
+    content: { type: new GraphQLNonNull(GraphQLString) },
+    userId: { type: new GraphQLNonNull(GraphQLID) },
+  },
+});
+
+const updatePostInputType = new GraphQLInputObjectType({
+  name: "updatePost",
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
   },
 });
 
@@ -33,9 +52,21 @@ export const postQuery = {
 export const addPost = {
   type: PostType,
   args: {
-    title: { type: new GraphQLNonNull(GraphQLString) },
-    content: { type: new GraphQLNonNull(GraphQLString) },
-    userId: { type: new GraphQLNonNull(GraphQLID) },
+    data: {
+      name: "createPost",
+      type: createPostInputType,
+    },
   },
   resolve: resolvers.createPost,
+};
+
+export const updatePost = {
+  type: PostType,
+  args: {
+    data: {
+      name: "updatePost",
+      type: updatePostInputType,
+    },
+  },
+  resolve: resolvers.updatePost,
 };
