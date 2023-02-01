@@ -265,4 +265,33 @@ export const resolvers = {
 
     return delSubscription(context, user, userTo.id);
   },
+
+  userSubscribedTo: async (
+    parent: any,
+    args: any,
+    context: FastifyInstance
+  ) => {
+    const { subscribedToUserIds } = parent;
+    const users: UserEntity[] = [];
+    for (let i = 0; i < subscribedToUserIds.length; i++) {
+      users.push(
+        <UserEntity>await context.db.users.findOne({
+          key: "id",
+          equals: subscribedToUserIds[i],
+        })
+      );
+    }
+    return users;
+  },
+
+  subscribedToUser: async (
+    parent: any,
+    args: any,
+    context: FastifyInstance
+  ) => {
+    return await context.db.users.findMany({
+      key: "subscribedToUserIds",
+      inArray: parent.id,
+    });
+  },
 };

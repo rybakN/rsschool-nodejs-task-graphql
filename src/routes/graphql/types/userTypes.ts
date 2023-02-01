@@ -11,6 +11,17 @@ import { PostType } from "./postTypes";
 import { ProfileType } from "./profileTypes";
 import { MemberType } from "./memberTypes";
 
+export const basicUserType = new GraphQLObjectType({
+  name: "basicUser",
+  fields: () => ({
+    id: { type: GraphQLID },
+    firstName: { type: GraphQLString },
+    lastName: { type: GraphQLString },
+    email: { type: GraphQLString },
+    subscribedToUserIds: { type: new GraphQLList(GraphQLID) },
+  }),
+});
+
 export const UserType = new GraphQLObjectType({
   name: "User",
   fields: () => ({
@@ -19,6 +30,14 @@ export const UserType = new GraphQLObjectType({
     lastName: { type: GraphQLString },
     email: { type: GraphQLString },
     subscribedToUserIds: { type: new GraphQLList(GraphQLID) },
+    userSubscribedTo: {
+      type: new GraphQLNonNull(new GraphQLList(UserType2)),
+      resolve: resolvers.userSubscribedTo,
+    },
+    subscribedToUser: {
+      type: new GraphQLNonNull(new GraphQLList(UserType2)),
+      resolve: resolvers.subscribedToUser,
+    },
     posts: {
       type: new GraphQLList(PostType),
       resolve: resolvers.getPostsByUserId,
@@ -30,6 +49,22 @@ export const UserType = new GraphQLObjectType({
     memberType: {
       type: MemberType,
       resolve: resolvers.getMemberTypeByUserId,
+    },
+  }),
+});
+
+export const UserType2 = new GraphQLObjectType({
+  name: "User2",
+  fields: () => ({
+    id: { type: GraphQLID },
+    subscribedToUserIds: { type: new GraphQLList(GraphQLID) },
+    userSubscribedTo: {
+      type: new GraphQLNonNull(new GraphQLList(basicUserType)),
+      resolve: resolvers.userSubscribedTo,
+    },
+    subscribedToUser: {
+      type: new GraphQLNonNull(new GraphQLList(basicUserType)),
+      resolve: resolvers.subscribedToUser,
     },
   }),
 });
